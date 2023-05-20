@@ -29,6 +29,16 @@ func cmdCreate(ctx context.Context, args []string) {
 		reply(ctx, "**Usage:** `create <username>`")
 		return
 	}
+	if cfg.MaxBotsPerUser > 0 {
+		bots, err := db.GetBots(ctx, getEvent(ctx).Sender)
+		if err != nil {
+			replyErr(ctx, err, "Failed to get bot list")
+			return
+		} else if len(bots) >= cfg.MaxBotsPerUser {
+			reply(ctx, "You have too many bots already")
+			return
+		}
+	}
 	username := args[0]
 	userID := id.NewUserID(username, cli.UserID.Homeserver())
 	if !IsValidBotUsername(username) {

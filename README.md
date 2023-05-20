@@ -20,6 +20,8 @@ The bot is configured through environment variables
 * `BOTBOT_BEEPER_API_URL` - Optional Beeper API server URL for registering
   users through the Beeper API instead of directly with Synapse.
 * `BOTBOT_LOG_LEVEL` - Log level. Defaults to `debug`.
+* `BOTBOT_MAX_BOTS_PER_USER` - Maximum number of bots that a single user can
+  create. Defaults to 10. Limit is disabled if set to 0.
 
 ## Docker image
 The docker image built by GitHub actions is available in the GitHub registry:

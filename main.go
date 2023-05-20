@@ -46,6 +46,8 @@ type Config struct {
 	RegisterSecret string `env:"REGISTER_SECRET"`
 
 	LogLevel zerolog.Level `env:"LOG_LEVEL" envDefault:"debug"`
+
+	MaxBotsPerUser int `env:"MAX_BOTS_PER_USER" envDefault:"10"`
 }
 
 var cli *mautrix.Client
