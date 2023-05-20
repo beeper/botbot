@@ -25,7 +25,7 @@ The bot is configured through environment variables
 
 ## Docker image
 The docker image built by GitHub actions is available in the GitHub registry:
-`ghcr.io/beeper/botbot`
+[`ghcr.io/beeper/botbot`](https://github.com/beeper/botbot/pkgs/container/botbot)
 
 You can use `:latest` for the latest commit, or a git commit hash to pin to a
 specific version. Only amd64 images are currently available.
