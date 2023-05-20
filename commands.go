@@ -29,6 +29,11 @@ var commands = map[string]CommandHandler{
 	"show":   cmdShow,
 	"create": cmdCreate,
 	"reset":  cmdReset,
+
+	// Aliases
+	"register": cmdCreate,
+	"info":     cmdShow,
+	"get":      cmdShow,
 }
 
 func handleCommand(ctx context.Context, evt *event.Event) {
