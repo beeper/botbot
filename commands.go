@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/rs/zerolog"
 	"maunium.net/go/mautrix/event"
-	"maunium.net/go/mautrix/id"
 )
 
 const helpMessage = `Botbot %s
@@ -65,33 +63,4 @@ func cmdPing(ctx context.Context, _ []string) {
 
 func cmdHelp(ctx context.Context, _ []string) {
 	reply(ctx, helpMessage, Version)
-}
-
-func cmdList(ctx context.Context, args []string) {
-	bots, err := db.GetBots(ctx, getEvent(ctx).Sender)
-	if err != nil {
-		replyErr(ctx, err, "Failed to get bot list")
-	} else if len(bots) == 0 {
-		reply(ctx, "You don't have any bots 😿")
-	} else {
-		lines := make([]string, len(bots))
-		for i, bot := range bots {
-			lines[i] = fmt.Sprintf("* [%s](%s)", bot.MXID, bot.MXID.URI().MatrixToURL())
-		}
-		reply(ctx, "Your bots:\n\n"+strings.Join(lines, "\n"))
-	}
-}
-
-func getBotMeta(ctx context.Context, username string) *Bot {
-	bot, err := db.GetBot(ctx, id.NewUserID(strings.ToLower(username), cli.UserID.Homeserver()))
-	if err != nil {
-		replyErr(ctx, err, "Failed to get bot info")
-	} else if bot == nil {
-		reply(ctx, "That bot doesn't exist")
-	} else if bot.OwnerMXID != getEvent(ctx).Sender {
-		reply(ctx, "That's not your bot")
-	} else {
-		return bot
-	}
-	return nil
 }

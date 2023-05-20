@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
+	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/mautrix/util"
 )
@@ -15,6 +17,20 @@ const showBotMessage = `Bot ´%s´ info:
 * Device ID: ´%s´
 * Last seen %s
 `
+
+func getBotMeta(ctx context.Context, username string) *Bot {
+	bot, err := db.GetBot(ctx, id.NewUserID(strings.ToLower(username), cli.UserID.Homeserver()))
+	if err != nil {
+		replyErr(ctx, err, "Failed to get bot info")
+	} else if bot == nil {
+		reply(ctx, "That bot doesn't exist")
+	} else if bot.OwnerMXID != getEvent(ctx).Sender {
+		reply(ctx, "That's not your bot")
+	} else {
+		return bot
+	}
+	return nil
+}
 
 func cmdShow(ctx context.Context, args []string) {
 	if len(args) < 1 {
