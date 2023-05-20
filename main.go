@@ -19,6 +19,7 @@ import (
 	"maunium.net/go/mautrix/synapseadmin"
 	"maunium.net/go/mautrix/util"
 	"maunium.net/go/mautrix/util/dbutil"
+	_ "maunium.net/go/mautrix/util/dbutil/litestream"
 
 	"github.com/beeper/botbot/upgrades"
 )
@@ -36,6 +37,7 @@ type Config struct {
 	Username      string `env:"USERNAME,notEmpty"`
 	Password      string `env:"PASSWORD,notEmpty"`
 	DatabasePath  string `env:"DATABASE_PATH" envDefault:"botbot.db"`
+	DatabaseType  string `env:"DATABASE_TYPE" envDefault:"sqlite3-fk-wal"`
 	PickleKey     string `env:"PICKLE_KEY" envDefault:"meow"`
 
 	BeeperAPIURL string `env:"BEEPER_API_URL"`
@@ -87,11 +89,11 @@ func main() {
 	synadm = &synapseadmin.Client{Client: cli}
 
 	log.Debug().Msg("Initializing database")
-	rawDB, err := dbutil.NewWithDialect(cfg.DatabasePath, "sqlite3")
+	rawDB, err := dbutil.NewWithDialect(cfg.DatabasePath, cfg.DatabaseType)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize database")
 	}
-	rawDB.Log = dbutil.ZeroLogger(log)
+	rawDB.Log = dbutil.ZeroLogger(log.With().Str("db_section", "main").Logger())
 	rawDB.Owner = "botbot"
 	rawDB.UpgradeTable = upgrades.Table
 	err = rawDB.Upgrade()
