@@ -15,6 +15,7 @@ import (
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/cryptohelper"
 	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/synapseadmin"
 	"maunium.net/go/mautrix/util"
 	"maunium.net/go/mautrix/util/dbutil"
 
@@ -39,6 +40,7 @@ type Config struct {
 }
 
 var cli *mautrix.Client
+var synadm *synapseadmin.Client
 var db *Database
 var cfg Config
 var globalLog = zerolog.New(os.Stdout).With().Timestamp().Logger()
@@ -62,6 +64,7 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to initialize mautrix client")
 	}
 	cli.Log = log
+	synadm = &synapseadmin.Client{Client: cli}
 
 	log.Debug().Msg("Initializing database")
 	rawDB, err := dbutil.NewWithDialect(cfg.DatabasePath, "sqlite3")

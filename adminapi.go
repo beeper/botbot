@@ -3,19 +3,15 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha1"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"regexp"
 
 	"maunium.net/go/mautrix"
-	"maunium.net/go/mautrix/id"
+	"maunium.net/go/mautrix/synapseadmin"
 )
 
 type BeeperCheckUsernameResponse struct {
@@ -44,47 +40,20 @@ func IsUsernameAvailable(ctx context.Context, username string) (bool, error) {
 		}
 		return respData.Available, nil
 	} else {
-		var resp mautrix.RespRegisterAvailable
-		var reqPath mautrix.PrefixableURLPath
+		var err error
 		if useSynapseAPI {
-			reqPath = mautrix.SynapseAdminURLPath{"v1", "username_available"}
+			_, err = synadm.UsernameAvailable(ctx, username)
 		} else {
-			reqPath = mautrix.ClientURLPath{"v3", "register", "available"}
+			_, err = cli.RegisterAvailable(username)
 		}
-		reqURL := cli.BuildURLWithQuery(reqPath, map[string]string{"username": username})
-		_, err := cli.MakeFullRequest(mautrix.FullRequest{
-			Method:       http.MethodGet,
-			URL:          reqURL,
-			ResponseJSON: &resp,
-			Context:      ctx,
-		})
-		if errors.Is(err, mautrix.MUserInUse) {
+		if errors.Is(err, mautrix.MUserInUse) || errors.Is(err, mautrix.MExclusive) {
 			return false, nil
 		} else if err != nil {
-			return false, fmt.Errorf("failed to send request to synapse: %w", err)
+			return false, err
+		} else {
+			return true, nil
 		}
-		return resp.Available, nil
 	}
-}
-
-type reqResetPassword struct {
-	NewPassword   string `json:"new_password"`
-	LogoutDevices bool   `json:"logout_devices"`
-}
-
-func ResetPassword(ctx context.Context, userID id.UserID, password string) error {
-	req := &reqResetPassword{
-		NewPassword:   password,
-		LogoutDevices: true,
-	}
-	reqURL := cli.BuildURL(mautrix.SynapseAdminURLPath{"v1", "reset_password", userID})
-	_, err := cli.MakeFullRequest(mautrix.FullRequest{
-		Method:      http.MethodGet,
-		URL:         reqURL,
-		RequestJSON: &req,
-		Context:     ctx,
-	})
-	return err
 }
 
 func Login(ctx context.Context, username, password string) (*mautrix.RespLogin, error) {
@@ -111,70 +80,15 @@ func RegisterUser(ctx context.Context, username, password string) error {
 	}
 }
 
-type respGetSynapseAdminRegister struct {
-	Nonce string `json:"nonce"`
-}
-
-type reqPostSynapseAdminRegister struct {
-	Nonce        string `json:"nonce"`
-	Username     string `json:"username"`
-	Password     string `json:"password"`
-	Displayname  string `json:"displayname,omitempty"`
-	UserType     string `json:"user_type,omitempty"`
-	InhibitLogin bool   `json:"inhibit_login,omitempty"`
-	Admin        bool   `json:"admin"`
-	Checksum     string `json:"mac"`
-}
-
-type respPostSynapseAdminRegister struct {
-	AccessToken string `json:"access_token"`
-	HomeServer  string `json:"home_server"`
-	UserID      string `json:"user_id"`
-	DeviceID    string `json:"device_id"`
-}
-
 func registerUserSynapse(ctx context.Context, username, password string) error {
-	registerURL := cli.BuildURL(mautrix.SynapseAdminURLPath{"v1", "register"})
-	var getRegister respGetSynapseAdminRegister
-	_, err := cli.MakeFullRequest(mautrix.FullRequest{
-		Method:       http.MethodGet,
-		URL:          registerURL,
-		ResponseJSON: &getRegister,
-		Context:      ctx,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to get nonce: %w", err)
-	}
-	reqRegister := reqPostSynapseAdminRegister{
-		Nonce:        getRegister.Nonce,
+	_, err := synadm.SharedSecretRegister(ctx, cfg.RegisterSecret, synapseadmin.ReqSharedSecretRegister{
 		Username:     username,
 		Password:     password,
 		UserType:     "bot",
+		Admin:        false,
 		InhibitLogin: true,
-	}
-	signer := hmac.New(sha1.New, []byte(cfg.RegisterSecret))
-	signer.Write([]byte(reqRegister.Nonce))
-	signer.Write([]byte{0})
-	signer.Write([]byte(reqRegister.Username))
-	signer.Write([]byte{0})
-	signer.Write([]byte(reqRegister.Password))
-	signer.Write([]byte{0})
-	signer.Write([]byte("notadmin"))
-	signer.Write([]byte{0})
-	signer.Write([]byte("bot"))
-	reqRegister.Checksum = hex.EncodeToString(signer.Sum(nil))
-	var respRegister respPostSynapseAdminRegister
-	_, err = cli.MakeFullRequest(mautrix.FullRequest{
-		Method:       http.MethodPost,
-		URL:          registerURL,
-		RequestJSON:  &reqRegister,
-		ResponseJSON: &respRegister,
-		Context:      ctx,
 	})
-	if err != nil {
-		return fmt.Errorf("failed to register user: %w", err)
-	}
-	return nil
+	return err
 }
 
 type reqBeeperRegister struct {

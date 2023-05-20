@@ -6,7 +6,7 @@ require (
 	github.com/caarlos0/env/v8 v8.0.0
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/rs/zerolog v1.29.1
-	maunium.net/go/mautrix v0.15.3-0.20230519144953-f87063cb7fa9
+	maunium.net/go/mautrix v0.15.3-0.20230520111248-44006bd06817
 )
 
 require (
