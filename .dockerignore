@@ -1,6 +1,5 @@
-/.*
 /Dockerfile
 /botbot
-**/*.db
-**/*.sqlite3
-**/*.yaml
+*.db
+*.db-shm
+*.db-wal
