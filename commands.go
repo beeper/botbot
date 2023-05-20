@@ -88,15 +88,3 @@ func getBotMeta(ctx context.Context, username string) *Bot {
 	}
 	return nil
 }
-
-func cmdShow(ctx context.Context, args []string) {
-	if len(args) < 1 {
-		reply(ctx, "**Usage:** `show <username>`")
-		return
-	}
-	bot := getBotMeta(ctx, args[0])
-	if bot == nil {
-		return
-	}
-	reply(ctx, "Showing bot info is not yet implemented")
-}
