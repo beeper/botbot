@@ -1,0 +1,6 @@
+/.*
+/Dockerfile
+/botbot
+**/*.db
+**/*.sqlite3
+**/*.yaml

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -22,7 +23,13 @@ import (
 	"github.com/beeper/botbot/upgrades"
 )
 
-const Version = "v0.1.0"
+var (
+	Version = "v0.1.0"
+
+	Tag       = ""
+	Commit    = ""
+	BuildTime = ""
+)
 
 type Config struct {
 	HomeserverURL string `env:"HOMESERVER_URL,notEmpty"`
@@ -46,6 +53,15 @@ var cfg Config
 var globalLog = zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 func main() {
+	if Tag != Version {
+		if Commit != "" {
+			Version += "+dev." + Commit[:8]
+		} else {
+			Version += "+dev.unknown"
+		}
+	}
+	mautrix.DefaultUserAgent = fmt.Sprintf("botbot/%s %s", Version, mautrix.DefaultUserAgent)
+
 	log := globalLog
 	err := env.ParseWithOptions(&cfg, env.Options{Prefix: "BOTBOT_"})
 	if err != nil {
@@ -57,7 +73,11 @@ func main() {
 	zerolog.CallerMarshalFunc = util.CallerWithFunctionName
 	defaultCtxLog := log.With().Bool("default_context_log", true).Caller().Logger()
 	zerolog.DefaultContextLogger = &defaultCtxLog
-	log.Info().Msg("Initializing botbot")
+	log.Info().
+		Str("version", Version).
+		Str("built_at", BuildTime).
+		Str("mautrix_version", mautrix.VersionWithCommit).
+		Msg("Initializing botbot")
 
 	cli, err = mautrix.NewClient(cfg.HomeserverURL, "", "")
 	if err != nil {
