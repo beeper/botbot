@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rs/zerolog"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 )
@@ -45,6 +46,12 @@ func handleCommand(ctx context.Context, evt *event.Event) {
 	if !ok {
 		cmd = cmdUnknownCommand
 	}
+	go func() {
+		err := cli.MarkRead(evt.RoomID, evt.ID)
+		if err != nil {
+			zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to mark command as read")
+		}
+	}()
 	cmd(ctx, args)
 }
 
