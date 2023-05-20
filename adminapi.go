@@ -13,6 +13,7 @@ import (
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mautrix/synapseadmin"
+	"maunium.net/go/mautrix/util"
 )
 
 type BeeperCheckUsernameResponse struct {
@@ -57,13 +58,13 @@ func IsUsernameAvailable(ctx context.Context, username string) (bool, error) {
 	}
 }
 
-func Login(ctx context.Context, username, password string) (*mautrix.RespLogin, error) {
+func Login(ctx context.Context, userID id.UserID, password string) (*mautrix.RespLogin, error) {
 	loginClient, _ := mautrix.NewClient(cfg.HomeserverURL, "", "")
 	resp, err := loginClient.Login(&mautrix.ReqLogin{
 		Type: mautrix.AuthTypePassword,
 		Identifier: mautrix.UserIdentifier{
 			Type: mautrix.IdentifierTypeUser,
-			User: username,
+			User: userID.String(),
 		},
 		Password:                 password,
 		InitialDeviceDisplayName: "botbot",
@@ -85,13 +86,14 @@ func LoginJWT(ctx context.Context, userID id.UserID) (*mautrix.RespLogin, error)
 	return resp, err
 }
 
-func RegisterUser(ctx context.Context, username, password string) error {
+func RegisterUser(ctx context.Context, username string) (string, error) {
+	password := util.RandomString(72)
 	if cfg.BeeperAPIURL != "" {
-		return registerUserBeeper(ctx, username, password)
+		return password, registerUserBeeper(ctx, username, password)
 	} else if cfg.RegisterSecret != "" {
-		return registerUserSynapse(ctx, username, password)
+		return password, registerUserSynapse(ctx, username, password)
 	} else {
-		return fmt.Errorf("no way to register users configured")
+		return "", fmt.Errorf("no way to register users configured")
 	}
 }
 

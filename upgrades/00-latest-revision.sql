@@ -2,6 +2,5 @@
 
 CREATE TABLE bots (
     mxid       TEXT PRIMARY KEY,
-    owner_mxid TEXT NOT NULL,
-    password   TEXT
+    owner_mxid TEXT NOT NULL
 ) STRICT;

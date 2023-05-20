@@ -16,16 +16,15 @@ type Database struct {
 type Bot struct {
 	MXID      id.UserID
 	OwnerMXID id.UserID
-	Password  string
 }
 
-func (db *Database) RegisterBot(ctx context.Context, owner, bot id.UserID, password string) error {
-	_, err := db.ExecContext(ctx, "INSERT INTO bots (mxid, owner_mxid, password) VALUES ($1, $2, $3)", bot, owner, password)
+func (db *Database) RegisterBot(ctx context.Context, owner, bot id.UserID) error {
+	_, err := db.ExecContext(ctx, "INSERT INTO bots (mxid, owner_mxid) VALUES ($1, $2)", bot, owner)
 	return err
 }
 
 func (db *Database) GetBots(ctx context.Context, owner id.UserID) ([]Bot, error) {
-	rows, err := db.QueryContext(ctx, "SELECT mxid, owner_mxid, password FROM bots WHERE owner_mxid=$1", owner)
+	rows, err := db.QueryContext(ctx, "SELECT mxid, owner_mxid FROM bots WHERE owner_mxid=$1", owner)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +32,7 @@ func (db *Database) GetBots(ctx context.Context, owner id.UserID) ([]Bot, error)
 	var bots []Bot
 	for rows.Next() {
 		var bot Bot
-		if err = rows.Scan(&bot.MXID, &bot.OwnerMXID, &bot.Password); err != nil {
+		if err = rows.Scan(&bot.MXID, &bot.OwnerMXID); err != nil {
 			return nil, err
 		}
 		bots = append(bots, bot)
@@ -43,15 +42,13 @@ func (db *Database) GetBots(ctx context.Context, owner id.UserID) ([]Bot, error)
 
 func (db *Database) GetBot(ctx context.Context, bot id.UserID) (*Bot, error) {
 	var b Bot
-	err := db.QueryRowContext(ctx, "SELECT mxid, owner_mxid, password FROM bots WHERE mxid=$1", bot).Scan(&b.MXID, &b.OwnerMXID, &b.Password)
+	err := db.
+		QueryRowContext(ctx, "SELECT mxid, owner_mxid, password FROM bots WHERE mxid=$1", bot).
+		Scan(&b.MXID, &b.OwnerMXID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
 	}
 	return &b, err
-}
-
-func (db *Database) GetCommandContext(ctx context.Context, userID id.UserID, roomID id.RoomID) (map[string]any, error) {
-	return nil, nil
 }

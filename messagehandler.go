@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -26,11 +27,17 @@ func getEvent(ctx context.Context) *event.Event {
 	return evt
 }
 
+func replyErr(ctx context.Context, err error, message string) {
+	zerolog.Ctx(ctx).Err(err).Msg(message)
+	reply(ctx, message)
+}
+
 func reply(ctx context.Context, message string, args ...any) id.EventID {
 	evt := getEvent(ctx)
 	if len(args) > 0 {
 		message = fmt.Sprintf(message, args...)
 	}
+	message = strings.ReplaceAll(message, "´", "`")
 	content := format.RenderMarkdown(message, true, true)
 	content.MsgType = event.MsgNotice
 	resp, err := cli.SendMessageEvent(evt.RoomID, event.EventMessage, content)
