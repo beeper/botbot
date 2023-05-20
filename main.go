@@ -36,7 +36,7 @@ type Config struct {
 	HomeserverURL string `env:"HOMESERVER_URL,notEmpty"`
 	Username      string `env:"USERNAME,notEmpty"`
 	Password      string `env:"PASSWORD,notEmpty"`
-	DatabasePath  string `env:"DATABASE_PATH" envDefault:"botbot.db"`
+	DatabaseURI   string `env:"DATABASE_URI" envDefault:"botbot.db"`
 	DatabaseType  string `env:"DATABASE_TYPE" envDefault:"sqlite3-fk-wal"`
 	PickleKey     string `env:"PICKLE_KEY" envDefault:"meow"`
 
@@ -89,7 +89,7 @@ func main() {
 	synadm = &synapseadmin.Client{Client: cli}
 
 	log.Debug().Msg("Initializing database")
-	rawDB, err := dbutil.NewWithDialect(cfg.DatabasePath, cfg.DatabaseType)
+	rawDB, err := dbutil.NewWithDialect(cfg.DatabaseURI, cfg.DatabaseType)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize database")
 	}
