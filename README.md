@@ -4,16 +4,16 @@ The bot that manages bot accounts on beeper.com. Should work on a normal Synapse
 ## Configuration
 The bot is configured through environment variables
 
-* `BOTBOT_HOMESERVER_URL` - The Matrix homeserver URL.
+* `BOTBOT_HOMESERVER_URL` (required) - The Matrix homeserver URL.
   Can (and probably should) be local.
-* `BOTBOT_USERNAME` - The username for this bot.
+* `BOTBOT_USERNAME` (required) - The username for this bot.
   * The user must be a Synapse admin for resetting bot passwords and viewing
     bot user info.
-* `BOTBOT_PASSWORD` - The password for the user above.
+* `BOTBOT_PASSWORD` (required) - The password for the user above.
 * `BOTBOT_DATABASE_URI` - The database URI (file name for SQLite or full
   connection string for Postgres). Defaults to `botbot.db`.
 * `BOTBOT_DATABASE_TYPE` - The type of database. `postgres` for postgres,
-  `sqlite3-fk-wal` for SQLite.
+  `sqlite3-fk-wal` for SQLite. Defaults to `sqlite3-fk-wal`.
 * `BOTBOT_PICKLE_KEY` - Pickle key for encrypting encryption keys.
 * `BOTBOT_REGISTER_SECRET` - Registration shared secret for creating new bot
   accounts for users. Required unless the Beeper API URL is set.
