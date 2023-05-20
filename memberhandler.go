@@ -168,30 +168,3 @@ func getOtherUserID(ctx context.Context, roomID id.RoomID, allowMemoryCache, all
 	memberValidatedRooms[roomID] = otherUserID
 	return otherUserID, nil
 }
-
-// TODO move this to mautrix-go
-func moveInviteState(resp *mautrix.RespSync, _ string) bool {
-	for _, meta := range resp.Rooms.Invite {
-		var inviteState []event.StrippedState
-		var inviteEvt *event.Event
-		for _, evt := range meta.State.Events {
-			if evt.Type == event.StateMember && evt.GetStateKey() == cli.UserID.String() {
-				inviteEvt = evt
-			} else {
-				evt.Type.Class = event.StateEventType
-				_ = evt.Content.ParseRaw(evt.Type)
-				inviteState = append(inviteState, event.StrippedState{
-					Content:  evt.Content,
-					Type:     evt.Type,
-					StateKey: evt.GetStateKey(),
-					Sender:   evt.Sender,
-				})
-			}
-		}
-		if inviteEvt != nil {
-			inviteEvt.Unsigned.InviteRoomState = inviteState
-			meta.State.Events = []*event.Event{inviteEvt}
-		}
-	}
-	return true
-}

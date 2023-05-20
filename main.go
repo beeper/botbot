@@ -123,7 +123,7 @@ func main() {
 	syncer := cli.Syncer.(*mautrix.DefaultSyncer)
 	syncer.OnEventType(event.StateMember, handleMember)
 	syncer.OnEventType(event.EventMessage, handleMessage)
-	syncer.OnSync(moveInviteState)
+	syncer.OnSync(cli.MoveInviteState)
 	cryptoHelper.DecryptErrorCallback = func(evt *event.Event, err error) {
 		_, _ = cli.SendMessageEvent(evt.RoomID, event.EventMessage, &event.MessageEventContent{
 			MsgType:   event.MsgNotice,
@@ -138,6 +138,7 @@ func main() {
 
 	go func() {
 		defer syncStopWait.Done()
+		log.Debug().Msg("Starting syncing")
 		err = cli.SyncWithContext(syncCtx)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			log.WithLevel(zerolog.FatalLevel).Err(err).Msg("Fatal error in syncer")
