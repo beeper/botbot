@@ -31,5 +31,6 @@ func cmdReset(ctx context.Context, args []string) {
 		replyErr(ctx, err, "Failed to create device after resetting bot")
 		return
 	}
-	reply(ctx, "Bot reset successfully."+botDetails, resp.UserID, resp.DeviceID, resp.AccessToken)
+	evtID := reply(ctx, "Bot reset successfully."+botDetails, resp.UserID, resp.DeviceID, resp.AccessToken)
+	selfDestruct(ctx, evtID, botDetailsSelfDestruct)
 }

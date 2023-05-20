@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"maunium.net/go/mautrix/id"
 )
@@ -13,11 +14,15 @@ const usernameInvalidError = `That username is not valid. Usernames must:
 * Not start with dash
 * End with ´bot´`
 
+const botDetailsSelfDestruct = 5 * time.Minute
+
 const botDetails = `
 
 * User ID: ´%s´
 * Device ID: ´%s´
-* Access token: ´%s´`
+* Access token: ´%s´
+
+This message will self-destruct in 5 minutes.`
 
 func cmdCreate(ctx context.Context, args []string) {
 	if len(args) < 1 {
@@ -47,6 +52,7 @@ func cmdCreate(ctx context.Context, args []string) {
 	} else if device, err := Login(ctx, userID, password); err != nil {
 		replyErr(ctx, err, "Failed to log in as bot after registering")
 	} else {
-		reply(ctx, "Bot created successfully 🎉"+botDetails, device.UserID, device.DeviceID, device.AccessToken)
+		evtID := reply(ctx, "Bot created successfully 🎉"+botDetails, device.UserID, device.DeviceID, device.AccessToken)
+		selfDestruct(ctx, evtID, botDetailsSelfDestruct)
 	}
 }
