@@ -29,8 +29,8 @@ func IsValidBotUsername(username string) bool {
 }
 
 func IsUsernameAvailable(ctx context.Context, username string) (bool, error) {
-	if cfg.BeeperAPI != "" {
-		resp, err := cli.Client.Get(cfg.BeeperAPI + "/check-username/" + url.PathEscape(username))
+	if cfg.BeeperAPIURL != "" {
+		resp, err := cli.Client.Get(cfg.BeeperAPIURL + "/check-username/" + url.PathEscape(username))
 		if err != nil {
 			return false, fmt.Errorf("failed to send request to api server: %w", err)
 		}
@@ -86,7 +86,7 @@ func LoginJWT(ctx context.Context, userID id.UserID) (*mautrix.RespLogin, error)
 }
 
 func RegisterUser(ctx context.Context, username, password string) error {
-	if cfg.BeeperAPI != "" {
+	if cfg.BeeperAPIURL != "" {
 		return registerUserBeeper(ctx, username, password)
 	} else if cfg.RegisterSecret != "" {
 		return registerUserSynapse(ctx, username, password)
@@ -120,7 +120,7 @@ func registerUserBeeper(ctx context.Context, username, password string) error {
 	if err != nil {
 		return fmt.Errorf("failed to encode request body: %w", err)
 	}
-	resp, err := cli.Client.Post(cfg.BeeperAPI+"/admin/bot/"+url.PathEscape(username), "application/json", &body)
+	resp, err := cli.Client.Post(cfg.BeeperAPIURL+"/admin/bot/"+url.PathEscape(username), "application/json", &body)
 	if err != nil {
 		return fmt.Errorf("failed to send request to api server: %w", err)
 	}

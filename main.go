@@ -38,9 +38,9 @@ type Config struct {
 	DatabasePath  string `env:"DATABASE_PATH" envDefault:"botbot.db"`
 	PickleKey     string `env:"PICKLE_KEY" envDefault:"meow"`
 
-	BeeperAPI string `env:"BEEPER_API"`
+	BeeperAPIURL string `env:"BEEPER_API_URL"`
 
-	LoginJWTKey    string `env:"LOGIN_JWT_KEY,notEmpty"`
+	LoginJWTKey    string `env:"LOGIN_JWT_KEY"`
 	RegisterSecret string `env:"REGISTER_SECRET"`
 
 	LogLevel zerolog.Level `env:"LOG_LEVEL" envDefault:"debug"`
