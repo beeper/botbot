@@ -35,10 +35,7 @@ var commands = map[string]CommandHandler{
 func handleCommand(ctx context.Context, evt *event.Event) {
 	content := evt.Content.AsMessage()
 	args := strings.Fields(content.Body)
-	command := strings.ToLower(args[0])
-	if strings.HasPrefix(command, "!") {
-		command = command[1:]
-	}
+	command := strings.TrimPrefix(strings.ToLower(args[0]), "!")
 	args = args[1:]
 	cmd, ok := commands[command]
 	if !ok {

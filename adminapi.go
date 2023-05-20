@@ -11,6 +11,7 @@ import (
 	"regexp"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mautrix/synapseadmin"
 )
 
@@ -65,6 +66,20 @@ func Login(ctx context.Context, username, password string) (*mautrix.RespLogin, 
 			User: username,
 		},
 		Password:                 password,
+		InitialDeviceDisplayName: "botbot",
+	})
+	return resp, err
+}
+
+func LoginJWT(ctx context.Context, userID id.UserID) (*mautrix.RespLogin, error) {
+	loginClient, _ := mautrix.NewClient(cfg.HomeserverURL, "", "")
+	resp, err := loginClient.Login(&mautrix.ReqLogin{
+		Type: "org.matrix.login.jwt",
+		Identifier: mautrix.UserIdentifier{
+			Type: mautrix.IdentifierTypeUser,
+			User: userID.String(),
+		},
+		Token:                    createLoginToken(userID),
 		InitialDeviceDisplayName: "botbot",
 	})
 	return resp, err
