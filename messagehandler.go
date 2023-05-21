@@ -41,7 +41,13 @@ func reply(ctx context.Context, message string, args ...any) id.EventID {
 	message = strings.ReplaceAll(message, "´", "`")
 	content := format.RenderMarkdown(message, true, true)
 	content.MsgType = event.MsgNotice
-	resp, err := cli.SendMessageEvent(evt.RoomID, event.EventMessage, content)
+	relatable, ok := evt.Content.Parsed.(*event.MessageEventContent)
+	if ok && relatable.GetRelatesTo().GetThreadParent() != "" {
+		content.RelatesTo = (&event.RelatesTo{}).SetThread(relatable.GetRelatesTo().GetThreadParent(), evt.ID)
+	} else {
+		content.RelatesTo = (&event.RelatesTo{}).SetReplyTo(evt.ID)
+	}
+	resp, err := cli.SendMessageEvent(evt.RoomID, event.EventMessage, &content)
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to send reply")
 		return ""

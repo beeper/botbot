@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"runtime/debug"
 	"strings"
 	"sync"
 
@@ -75,25 +76,65 @@ func getUserCommandContext(ctx context.Context) *CommandContext {
 	return ctx.Value(contextKeyCmdContext).(*CommandContext)
 }
 
-func handleCommand(ctx context.Context, evt *event.Event) {
+func backgroundMarkRead(ctx context.Context, evt *event.Event) {
 	go func() {
 		err := cli.MarkRead(evt.RoomID, evt.ID)
 		if err != nil {
 			zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to mark command as read")
 		}
 	}()
+}
 
-	content := evt.Content.AsMessage()
+func handleCommand(ctx context.Context, evt *event.Event) {
+	log := *zerolog.Ctx(ctx)
+	defer func() {
+		if r := recover(); r != nil {
+			logEvt := log.Error()
+			if err, ok := r.(error); ok {
+				logEvt = logEvt.Err(err)
+			} else {
+				logEvt = logEvt.Interface("error", r)
+			}
+			logEvt.Bytes("stack", debug.Stack()).Msg("Panic while processing command")
+			reply(ctx, "Internal error processing command.")
+		}
+	}()
+
+	content, ok := evt.Content.Parsed.(*event.MessageEventContent)
+	if !ok {
+		log.Debug().Type("content_type", evt.Content).Msg("Ignoring message with unknown parsed content type")
+		return
+	} else if content.RelatesTo.GetReplaceID() != "" {
+		log.Debug().Msg("Ignoring edit event")
+		return
+	} else if content.MsgType == event.MsgNotice {
+		log.Debug().Msg("Ignoring m.notice message")
+		return
+	}
+	content.RemoveReplyFallback()
 	args := strings.Fields(content.Body)
+	if len(args) == 0 {
+		log.Debug().Msg("Ignoring empty message")
+		return
+	}
+
+	command := strings.TrimPrefix(strings.ToLower(args[0]), "!")
+	log = log.With().Str("command", command).Logger()
+
 	cmdCtx := getCommandContextFromMap(evt.Sender)
 	ctx = context.WithValue(ctx, contextKeyCmdContext, cmdCtx)
+	ctx = log.WithContext(ctx)
+
 	cmdCtx.Lock()
 	defer cmdCtx.Unlock()
 
-	command := strings.TrimPrefix(strings.ToLower(args[0]), "!")
 	if cmdCtx.Next != nil && command != "cancel" {
+		backgroundMarkRead(ctx, evt)
 		cmdCtx.Next(ctx, args)
+	} else if content.MsgType != event.MsgText {
+		log.Debug().Msg("Ignoring non-text non-context command")
 	} else {
+		backgroundMarkRead(ctx, evt)
 		args = args[1:]
 		cmd, ok := commands[command]
 		if !ok {
