@@ -37,6 +37,9 @@ func handleMember(source mautrix.EventSource, evt *event.Event) {
 		} else if evt.Sender.Homeserver() != cli.UserID.Homeserver() {
 			log.Debug().Msg("Rejecting invite from user on different homeserver")
 			leaveRoom(ctx, evt.RoomID, fmt.Sprintf("This bot only serves users on %s", cli.UserID.Homeserver()))
+		} else if bot, _ := db.GetBot(ctx, id.UserID(evt.GetStateKey())); bot != nil {
+			log.Debug().Msg("Rejecting invite from a bot managed by this bot")
+			leaveRoom(ctx, evt.RoomID, "Bots can't have their own bots")
 		} else if stateProblem := inviteLooksPrivate(evt); stateProblem != "" {
 			log.Debug().
 				Str("problem", stateProblem).
@@ -51,6 +54,9 @@ func handleMember(source mautrix.EventSource, evt *event.Event) {
 		if errors.Is(err, errWrongMemberCount) {
 			log.Debug().Msg("Room has more than 2 members now, leaving")
 			leaveRoom(ctx, evt.RoomID, "Another user joined the room")
+		} else if errors.Is(err, errOtherMemberIsBot) {
+			log.Debug().Msg("Other member in room is a bot, leaving")
+			leaveRoom(ctx, evt.RoomID, "Bots can't have their own bots")
 		} else if err != nil {
 			log.Err(err).Msg("Failed to get members in room after member event from someone else")
 		}
@@ -77,6 +83,9 @@ func acceptInvite(ctx context.Context, evt *event.Event) {
 	if errors.Is(err, errWrongMemberCount) {
 		log.Debug().Msg("Room has more than 2 members after accepting invite, leaving")
 		leaveRoom(ctx, evt.RoomID, "This bot only accepts direct chat invites")
+	} else if errors.Is(err, errOtherMemberIsBot) {
+		log.Debug().Msg("Other member in room is a bot, leaving")
+		leaveRoom(ctx, evt.RoomID, "Bots can't have their own bots")
 	} else if err != nil {
 		log.Err(err).Msg("Failed to check members in room after accepting invite")
 		leaveRoom(ctx, evt.RoomID, "Failed to check members in room")
@@ -122,6 +131,7 @@ func inviteLooksPrivate(evt *event.Event) string {
 }
 
 var errWrongMemberCount = errors.New("room has more than 2 members")
+var errOtherMemberIsBot = errors.New("other member is a bot")
 
 var memberValidatedRooms = make(map[id.RoomID]id.UserID)
 var memberValidatedRoomsLock sync.Mutex
@@ -164,6 +174,11 @@ func getOtherUserID(ctx context.Context, roomID id.RoomID, allowMemoryCache, all
 		otherUserID = members[0]
 	} else {
 		return "", fmt.Errorf("neither member in room is the bot")
+	}
+	if bot, err := db.GetBot(ctx, otherUserID); err != nil {
+		return "", fmt.Errorf("failed to check if other member is a bot: %w", err)
+	} else if bot != nil {
+		return "", errOtherMemberIsBot
 	}
 	memberValidatedRooms[roomID] = otherUserID
 	return otherUserID, nil
