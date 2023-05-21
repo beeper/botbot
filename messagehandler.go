@@ -17,6 +17,7 @@ type contextKey int
 
 const (
 	contextKeyEvent contextKey = iota
+	contextKeyCmdContext
 )
 
 func getEvent(ctx context.Context) *event.Event {
