@@ -60,30 +60,28 @@ func IsUsernameAvailable(ctx context.Context, username string) (bool, error) {
 
 func Login(ctx context.Context, userID id.UserID, password string) (*mautrix.RespLogin, error) {
 	loginClient, _ := mautrix.NewClient(cfg.HomeserverURL, "", "")
-	resp, err := loginClient.Login(&mautrix.ReqLogin{
-		Type: mautrix.AuthTypePassword,
-		Identifier: mautrix.UserIdentifier{
-			Type: mautrix.IdentifierTypeUser,
-			User: userID.String(),
-		},
-		Password:                 password,
-		InitialDeviceDisplayName: "botbot",
-	})
-	return resp, err
-}
+	identifier := mautrix.UserIdentifier{
+		Type: mautrix.IdentifierTypeUser,
+		User: userID.String(),
+	}
+	const deviceDisplayName = "botbot"
+	if cfg.LoginJWTKey != "" {
+		return loginClient.Login(&mautrix.ReqLogin{
+			Type:       mautrix.AuthTypeSynapseJWT,
+			Identifier: identifier,
+			Token:      createLoginToken(userID),
 
-func LoginJWT(ctx context.Context, userID id.UserID) (*mautrix.RespLogin, error) {
-	loginClient, _ := mautrix.NewClient(cfg.HomeserverURL, "", "")
-	resp, err := loginClient.Login(&mautrix.ReqLogin{
-		Type: "org.matrix.login.jwt",
-		Identifier: mautrix.UserIdentifier{
-			Type: mautrix.IdentifierTypeUser,
-			User: userID.String(),
-		},
-		Token:                    createLoginToken(userID),
-		InitialDeviceDisplayName: "botbot",
-	})
-	return resp, err
+			InitialDeviceDisplayName: deviceDisplayName,
+		})
+	} else {
+		return loginClient.Login(&mautrix.ReqLogin{
+			Type:       mautrix.AuthTypePassword,
+			Identifier: identifier,
+			Password:   password,
+
+			InitialDeviceDisplayName: deviceDisplayName,
+		})
+	}
 }
 
 func RegisterUser(ctx context.Context, username string) (string, error) {

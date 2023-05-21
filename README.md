@@ -17,6 +17,9 @@ The bot is configured through environment variables
 * `BOTBOT_PICKLE_KEY` - Pickle key for encrypting encryption keys.
 * `BOTBOT_REGISTER_SECRET` - Registration shared secret for creating new bot
   accounts for users. Required unless the Beeper API URL is set.
+* `BOTBOT_LOGIN_JWT_KEY` - JWT secret for logging into bot accounts.
+  If set, the bot will use Synapse's `org.matrix.login.jwt` login type instead
+  of password login. Only supports the `HS256` algorithm.
 * `BOTBOT_BEEPER_API_URL` - Optional Beeper API server URL for registering
   users through the Beeper API instead of directly with Synapse.
 * `BOTBOT_LOG_LEVEL` - Log level. Defaults to `debug`.
