@@ -16,6 +16,7 @@ import (
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/cryptohelper"
 	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mautrix/synapseadmin"
 	"maunium.net/go/mautrix/util"
 	"maunium.net/go/mautrix/util/dbutil"
@@ -128,6 +129,8 @@ func main() {
 	syncer.OnEventType(event.StateMember, handleMember)
 	syncer.OnEventType(event.EventMessage, handleMessage)
 	syncer.OnSync(cli.MoveInviteState)
+	cryptoHelper.Machine().SendKeysMinTrust = id.TrustStateCrossSignedTOFU
+	cryptoHelper.Machine().ShareKeysMinTrust = id.TrustStateCrossSignedTOFU
 	cryptoHelper.DecryptErrorCallback = func(evt *event.Event, err error) {
 		_, _ = cli.SendMessageEvent(evt.RoomID, event.EventMessage, &event.MessageEventContent{
 			MsgType:   event.MsgNotice,

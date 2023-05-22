@@ -34,6 +34,14 @@ func replyErr(ctx context.Context, err error, message string) {
 }
 
 func reply(ctx context.Context, message string, args ...any) id.EventID {
+	return replyOpts(ctx, ReplyOpts{}, message, args...)
+}
+
+type ReplyOpts struct {
+	DontEncrypt bool
+}
+
+func replyOpts(ctx context.Context, opts ReplyOpts, message string, args ...any) id.EventID {
 	evt := getEvent(ctx)
 	if len(args) > 0 {
 		message = fmt.Sprintf(message, args...)
@@ -47,7 +55,9 @@ func reply(ctx context.Context, message string, args ...any) id.EventID {
 	} else {
 		content.RelatesTo = (&event.RelatesTo{}).SetReplyTo(evt.ID)
 	}
-	resp, err := cli.SendMessageEvent(evt.RoomID, event.EventMessage, &content)
+	resp, err := cli.SendMessageEvent(evt.RoomID, event.EventMessage, &content, mautrix.ReqSendEvent{
+		DontEncrypt: opts.DontEncrypt,
+	})
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to send reply")
 		return ""
@@ -86,7 +96,18 @@ func handleMessage(source mautrix.EventSource, evt *event.Event) {
 			Str("trust_state", evt.Mautrix.TrustState.String()).
 			Bool("forwarded_keys", evt.Mautrix.ForwardedKeys).
 			Msg("Dropping message with insufficient verification level")
-		reply(ctx, "Insufficient verification level %s (forwarded keys: %t)", evt.Mautrix.TrustState, evt.Mautrix.ForwardedKeys)
+		msg := "Your device is not trusted"
+		switch evt.Mautrix.TrustState {
+		case id.TrustStateCrossSignedUntrusted:
+			msg += " (cross-signing keys changed after using the bot)"
+		case id.TrustStateForwarded:
+			msg += " (keys were forwarded from an unknown device, try `/discardsession`?)"
+		case id.TrustStateUnknownDevice:
+			msg += " (device info not found)"
+		case id.TrustStateUnset:
+			msg += " (unverified)"
+		}
+		replyOpts(ctx, ReplyOpts{DontEncrypt: true}, msg)
 	} else {
 		handleCommand(ctx, evt)
 	}
